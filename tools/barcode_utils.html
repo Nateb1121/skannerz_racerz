@@ -1,0 +1,201 @@
+<!-- 
+    Generates barcodes up to maxResults matching a UPC pattern with wildcards
+    Lets you copy it to print 
+
+    Can also count them 
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>barcode utils</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
+    <script>
+function generateUPCs(justCount = false) {
+    const inputPattern = document.getElementById("upcPattern").value;
+    const maxResults = parseInt(document.getElementById("maxResults").value) || 20;
+
+    if (!/^[0-9*]{12}$/.test(inputPattern)) {
+        alert("Please enter exactly 12 characters using digits (0-9) or * as a wildcard.");
+        return;
+    }
+    
+    let results = [];
+    function generateCombinations(pattern, index) {
+        if (index === pattern.length) {
+            if (isValidUPC(pattern)) {
+                results.push(pattern);
+            }
+            return;
+        }
+        
+        if (pattern[index] === '*') {
+            for (let i = 0; i <= 9; i++) {
+                generateCombinations(pattern.substring(0, index) + i + pattern.substring(index + 1), index + 1);
+                if (results.length >= maxResults && !justCount) return;
+            }
+        } else {
+            generateCombinations(pattern, index + 1);
+        }
+    }
+
+    
+    function isValidUPC(upc) {
+        let sum = 0;
+        for (let i = 0; i < 11; i++) {
+            let num = parseInt(upc[i]);
+            sum += (i % 2 === 0) ? num * 3 : num;
+        }
+        let checkDigit = (10 - (sum % 10)) % 10;
+        return checkDigit === parseInt(upc[11]);
+    }
+    
+    generateCombinations(inputPattern, 0);
+
+    let outputDiv = document.getElementById("results");
+    outputDiv.innerHTML = "";
+    
+    if(justCount){
+        document.getElementById("results").innerHTML = results.length ? results.length  : "No valid UPCs found.";
+        return;
+    }
+
+    if (results.length) {
+        let copyAllButton = document.createElement("button");
+        copyAllButton.innerText = "Copy All Barcodes";
+        copyAllButton.onclick = function() { copyAllToClipboard(results); };
+        outputDiv.appendChild(copyAllButton);
+
+        results.forEach(upc => {
+            let container = document.createElement("div");
+            container.classList.add("barcode-container");
+            
+            let svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.setAttribute('jsbarcode-format', 'upc');
+            svg.setAttribute('jsbarcode-value', upc); 
+            svg.className.baseVal = "barcode";
+            svg.width.baseVal.valueInSpecifiedUnits = 300
+            svg.height.baseVal.valueInSpecifiedUnits = 100
+            svg.id = "barcode-" + upc;
+            container.appendChild(svg);
+            
+            let copyButton = document.createElement("button");
+            copyButton.innerText = "Copy Barcode";
+            copyButton.onclick = function() { copyToClipboard(upc); };
+            container.appendChild(copyButton);
+            
+            outputDiv.appendChild(container);
+
+ 
+        });
+
+        /*
+        let copyAllButton = document.createElement("button");
+        copyAllButton.innerText = "Copy All Barcodes";
+        copyAllButton.onclick = function() { copyAllToClipboard(results); };
+        outputDiv.appendChild(copyAllButton);
+        */ 
+
+        JsBarcode(".barcode").init();
+    } else {
+        outputDiv.innerHTML = "No valid UPCs found.";
+    }
+}
+
+
+
+        function copyToClipboard(upc) {
+            let svg = document.getElementById("barcode-" + upc);
+            let serializer = new XMLSerializer();
+            let svgString = serializer.serializeToString(svg);
+            let blob = new Blob([svgString], { type: "image/svg+xml" });
+            let clipboardItem = new ClipboardItem({ "image/svg+xml": blob });
+            navigator.clipboard.write([clipboardItem]).then(() => {
+                //alert("Barcode copied to clipboard!");
+            }).catch(err => {
+                console.error("Copy failed", err);
+                alert("Failed to copy barcode.");
+            });
+        }
+
+        async function copyAllToClipboard(upcs) {
+            if (upcs.length === 0) {
+                alert("No barcodes found to copy.");
+                return;
+            }
+
+            let barcodeHeight = 100;
+            let barcodeWidth = 300;
+            let columns = 2;  // Two columns
+            let rows = Math.ceil(upcs.length / columns);  // Number of rows needed
+
+            let canvas = document.createElement("canvas");
+            let ctx = canvas.getContext("2d");
+
+            // Set canvas size to fit all barcodes in two columns
+            canvas.width = barcodeWidth * columns;
+            canvas.height = barcodeHeight * rows;
+            
+            let xOffset = 0;
+            let yOffset = 0;
+            let columnIndex = 0;
+
+            for (let upc of upcs) {
+                let svgElement = document.getElementById("barcode-" + upc);
+                if (!svgElement) continue;
+
+                let svgData = new XMLSerializer().serializeToString(svgElement);
+                let img = new Image();
+                let svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+                let url = URL.createObjectURL(svgBlob);
+
+                await new Promise((resolve) => {
+                    img.onload = () => {
+                        ctx.drawImage(img, xOffset, yOffset, barcodeWidth, barcodeHeight);
+                        URL.revokeObjectURL(url);
+
+                        // Move to the next column
+                        columnIndex++;
+                        if (columnIndex >= columns) {
+                            columnIndex = 0;
+                            yOffset += barcodeHeight;  // Move to the next row
+                        }
+                        xOffset = columnIndex * barcodeWidth;
+
+                        resolve();
+                    };
+                    img.src = url;
+                });
+            }
+
+            canvas.toBlob(async (blob) => {
+                try {
+                    await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+                    alert("All barcodes copied to clipboard as an image!");
+                } catch (err) {
+                    console.error("Copy failed", err);
+                    alert("Failed to copy barcodes.");
+                }
+            }, "image/png");
+        }
+
+
+
+
+
+
+    </script>
+</head>
+<body>
+    <h2>Barcode utils</h2>
+    <p>Enter a 12-digit UPC pattern using digits (0-9) and * as wildcards:</p>
+    <input type="text" id="upcPattern" maxlength="12" placeholder="Example: 12345*****67">
+    <input type="number" id="maxResults" value="20">
+    <button onclick="generateUPCs()">Find UPCs</button>
+    <button onclick="generateUPCs(true)">Count Possible UPCs</button>
+    <h3>Valid UPC Codes:</h3>
+    <div id="results"></div>
+    <svg id="barcode" style="display : hidden"></svg>
+</body>
+</html>
