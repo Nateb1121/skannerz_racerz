@@ -15,14 +15,15 @@
 function generateUPCs(justCount = false) {
     const inputPattern = document.getElementById("upcPattern").value;
     const maxResults = parseInt(document.getElementById("maxResults").value) || 20;
+    const stepBy = parseInt(document.getElementById("stepBy").value) || 1;
 
-    if (!/^[0-9*]{12}$/.test(inputPattern)) {
-        alert("Please enter exactly 12 characters using digits (0-9) or * as a wildcard.");
+    if (!/^[0-9*X]{12}$/.test(inputPattern)) {
+        alert("Please enter exactly 12 characters using digits (0-9) or * as a wildcard or X as the check bit");
         return;
     }
     
     let results = [];
-    function generateCombinations(pattern, index) {
+    function generateCombinations(pattern, index, stepBy) {
         if (index === pattern.length) {
             if (isValidUPC(pattern)) {
                 results.push(pattern);
@@ -31,12 +32,17 @@ function generateUPCs(justCount = false) {
         }
         
         if (pattern[index] === '*') {
+            for (let i = 0; i <= 9; i+=stepBy) {
+                generateCombinations(pattern.substring(0, index) + i + pattern.substring(index + 1), index + 1, stepBy);
+                if (results.length >= maxResults && !justCount) return;
+            }
+        } else if (pattern[index] === 'X') {
             for (let i = 0; i <= 9; i++) {
-                generateCombinations(pattern.substring(0, index) + i + pattern.substring(index + 1), index + 1);
+                generateCombinations(pattern.substring(0, index) + i + pattern.substring(index + 1), index + 1, stepBy);
                 if (results.length >= maxResults && !justCount) return;
             }
         } else {
-            generateCombinations(pattern, index + 1);
+            generateCombinations(pattern, index + 1, stepBy);
         }
     }
 
@@ -51,7 +57,7 @@ function generateUPCs(justCount = false) {
         return checkDigit === parseInt(upc[11]);
     }
     
-    generateCombinations(inputPattern, 0);
+    generateCombinations(inputPattern, 0, stepBy);
 
     let outputDiv = document.getElementById("results");
     outputDiv.innerHTML = "";
@@ -189,8 +195,9 @@ function generateUPCs(justCount = false) {
 </head>
 <body>
     <h2>Barcode utils</h2>
-    <p>Enter a 12-digit UPC pattern using digits (0-9) and * as wildcards:</p>
+    <p>Enter a 12-digit UPC pattern using digits (0-9) and * as wildcards and X as a check bit (if using stepBy):</p>
     <input type="text" id="upcPattern" maxlength="12" placeholder="Example: 12345*****67">
+    <input type="number" id="stepBy" maxlength="1" placeholder="1">
     <input type="number" id="maxResults" value="20">
     <button onclick="generateUPCs()">Find UPCs</button>
     <button onclick="generateUPCs(true)">Count Possible UPCs</button>
