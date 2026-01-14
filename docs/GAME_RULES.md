@@ -10,7 +10,7 @@ Based on the official manual, Skannerz Racerz features a comprehensive system wi
 - **120** hot rods and trucks
     - **63** Obtainable via races [list](./CARS_AND_RACERS.md#racer-car-list)
     - **1** special vehicle (Gizmo) - your starter car that you cannot lose 
-    - **49** Obtainable via barcode scanning [list](./CARS.md)
+    - **49** Obtainable via barcode scanning [list](./ITEM_CARS.md)
     - TODO: Where are the rest??????
 
 ### Car Parts
