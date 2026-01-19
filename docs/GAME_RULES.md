@@ -12,6 +12,7 @@ Based on the official manual, Skannerz Racerz features a comprehensive system wi
     - **1** special vehicle (Gizmo) - your starter car that you cannot lose 
     - **49** Obtainable via barcode scanning [list](./ITEM_CARS.md)
     - TODO: Where are the rest??????
+    - Wikipedia specifically claims - "There are 120 cars in total, which consists of 40 cars per class" - 40 per class? 
 
 ### Car Parts
 - **64** car parts available [list](./ITEMS.md)
